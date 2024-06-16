@@ -1,9 +1,6 @@
 import subprocess
-import socket
-import sys
 import os
-import shutil
-import tempfile
+import glob
 
 def check_connectivity(host, port):
     try:
@@ -35,34 +32,35 @@ def create_override():
     # Preguntar ports
     ports = input(f"Introdueix els ports a exportar (per defecte '{default_ports}'): ").strip()
 
-    # Crear el contingut del docker-compose.override.yml
-    override_content = f"""
+    override_content = """
 version: '3.9'
 
 services:
   omsa:
-    environment:
 """
 
-    # Afegir usuari si està definit
-    if user:
-        override_content += f"      OMSA_USER: \"{user}\"\n"
-    else:
-        override_content += f"      OMSA_USER: \"{default_user}\"\n"
-
-    # Afegir contrasenya si està definida
-    if password:
-        override_content += f"      OMSA_PASS: \"{password}\"\n"
-    else:
-        override_content += f"      OMSA_PASS: \"{default_pass}\"\n"
+    # Afegir environment si l'usuari o la contrasenya es defineixen
+    environment_defined = False
+    if user or password:
+        environment_defined = True
+        override_content += "    environment:\n"
+        if user:
+            override_content += f"      OMSA_USER: \"{user}\"\n"
+        if password:
+            override_content += f"      OMSA_PASS: \"{password}\"\n"
 
     # Afegir ports si estan definits
+    ports_defined = False
     if ports:
+        ports_defined = True
         override_content += "    ports:\n"
         for port in ports.split(','):
             override_content += f"      - \"{port}\"\n"
-    else:
-        override_content += f"    ports:\n      - \"{default_ports}\"\n"
+
+    # Si no es defineix ni environment ni ports, no cal crear el fitxer
+    if not environment_defined and not ports_defined:
+        print("No s'han definit ni usuari/contrasenya ni ports. No es crearà el fitxer docker-compose.override.yml.")
+        return
 
     # Escriure el fitxer docker-compose.override.yml
     with open('docker-compose.override.yml', 'w') as file:

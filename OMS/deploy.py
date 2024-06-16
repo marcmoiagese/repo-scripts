@@ -1,6 +1,7 @@
 import subprocess
 import os
 import glob
+import socket
 
 def check_connectivity(host, port):
     try:

@@ -2,6 +2,8 @@ import subprocess
 import os
 import glob
 import socket
+import sys
+
 
 def check_connectivity(host, port):
     try:
@@ -71,11 +73,21 @@ services:
 
 def run_docker_compose_up(target_dir):
     try:
+        # Intentar executar sense sudo
         subprocess.run(['docker', 'compose', 'up', '-d'], cwd=target_dir, check=True)
         print("Els serveis de Docker s'han iniciat correctament.")
     except subprocess.CalledProcessError as e:
-        print(f"Error executant 'docker compose up -d': {e}")
-        sys.exit(1)
+        if 'permission denied' in str(e).lower():
+            try:
+                # Intentar executar amb sudo
+                subprocess.run(['sudo', 'docker', 'compose', 'up', '-d'], cwd=target_dir, check=True)
+                print("Els serveis de Docker s'han iniciat correctament amb sudo.")
+            except subprocess.CalledProcessError as e:
+                print(f"Error executant 'sudo docker compose up -d': {e}")
+                sys.exit(1)
+        else:
+            print(f"Error executant 'docker compose up -d': {e}")
+            sys.exit(1)
 
 def delete_yml_files():
     yml_files = glob.glob('*.yml')

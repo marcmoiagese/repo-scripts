@@ -125,4 +125,9 @@ if __name__ == "__main__":
     if os.geteuid() != 0:
         print("[-] Aquest script ha d'executar-se com a root.")
         sys.exit(1)
-    main()
+
+    try:
+        main()
+    finally:
+        # Atexit ja fa cleanup(), però podem cridar-ho manualment també
+        pass

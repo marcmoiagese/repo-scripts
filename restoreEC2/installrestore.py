@@ -59,20 +59,29 @@ def extract_executable():
     run_cmd(["docker", "rmi", "restore-builder"])
 
 def ask_config():
-    print("[+] Configuració:")
+    print("[+] Configuració: Llegint des de variables d'entorn")
     config = {
-        "bucketName": input("Bucket Name: "),
-        "prefix": "exported-images/",
-        "subnetID": input("Subnet ID: "),
-        "iamRole": input("IAM Role: "),
-        "instanceType": input("Instance Type (ex: r5a.4xlarge): "),
-        "region": input("AWS Region (ex: eu-west-1): "),
-        "projectTag": input("Project Tag: "),
-        "nameTag": input("Name Tag: "),
+        "bucketName": os.getenv("BUCKET_NAME"),
+        "prefix": os.getenv("PREFIX", "exported-images/"),
+        "subnetID": os.getenv("SUBNET_ID"),
+        "iamRole": os.getenv("IAM_ROLE"),
+        "instanceType": os.getenv("INSTANCE_TYPE"),
+        "region": os.getenv("AWS_REGION"),
+        "projectTag": os.getenv("PROJECT_TAG"),
+        "nameTag": os.getenv("NAME_TAG"),
     }
+
+    # Validar camps obligatoris
+    required_fields = ["bucketName", "subnetID", "iamRole", "instanceType", "region"]
+    missing = [k for k, v in config.items() if v is None and k in required_fields]
+    if missing:
+        print(f"[-] Falten variables d'entorn: {', '.join(missing)}")
+        sys.exit(1)
+
     with open("/etc/ec2restore/restore.cfg", "w") as f:
         for key, value in config.items():
-            f.write(f"{key}={value}\n")
+            if value is not None:
+                f.write(f"{key}={value}\n")
     print("[+] Fitxer de configuració creat a /etc/ec2restore/restore.cfg")
 
 def create_launcher_script():

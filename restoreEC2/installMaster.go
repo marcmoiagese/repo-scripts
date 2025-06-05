@@ -56,6 +56,17 @@ func downloadScript(url string) ([]byte, error) {
 func runPythonScriptInMemory(script []byte) error {
 	cmd := exec.CommandContext(context.Background(), "python3", "-")
 
+	// Definir variables d'entorn
+	cmd.Env = append(os.Environ(),
+		"BUCKET_NAME=",
+		"SUBNET_ID=",
+		"IAM_ROLE=",
+		"INSTANCE_TYPE=",
+		"AWS_REGION=",
+		"PROJECT_TAG=",
+		"NAME_TAG=",
+	)
+
 	// Passar el contingut del script via stdin
 	cmd.Stdin = bytes.NewReader(script)
 

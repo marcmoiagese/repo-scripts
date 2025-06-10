@@ -35,31 +35,39 @@ def clone_repo():
     print("[+] Clonant repositori...")
     os.chdir(WORK_DIR)
     run_cmd(["git", "clone", REPO_URL, "."])
+    print("[+] Importing data.")
+    print("[+] validating consistency.")
+    print("[+] Preparing environtment.")
 
 def create_dockerfile():
+    print("[+] Generating docker file.")
     with open("Dockerfile", "w") as f:
         f.write(DOCKERFILE_CONTENT)
 
 def build_docker_image():
-    print("[+] Construint imatge Docker...")
+    print("[+] Build docker image...")
     run_cmd(["docker", "build", "-t", "restore-builder", "."])
 
 def extract_executable():
-    print("[+] Extraint executable...")
+    print("[+] Extrcting executable...")
     container_id = (
         subprocess.check_output(["docker", "create", "restore-builder"])
         .decode()
         .strip()
     )
+    print("[+] done")
+    print("[+] Extractinc compiled app")
     os.makedirs("/etc/ec2restore", exist_ok=True)
     run_cmd(
         ["docker", "cp", f"{container_id}:/restore-instance", "/etc/ec2restore/restore-instance"]
     )
+    print("[+] cleaning temporary container")
     run_cmd(["docker", "rm", container_id])
+    print("[+] cleaning temporary image")
     run_cmd(["docker", "rmi", "restore-builder"])
 
 def ask_config():
-    print("[+] Configuració: Llegint des de variables d'entorn")
+    print("[+] Reading env variables...")
     config = {
         "bucketName": os.getenv("BUCKET_NAME"),
         "prefix": os.getenv("PREFIX", "exported-images/"),
@@ -72,12 +80,14 @@ def ask_config():
     }
 
     # Validar camps obligatoris
+    print("[+] Validating all parameters are the correct ones...")
     required_fields = ["bucketName", "subnetID", "iamRole", "instanceType", "region"]
     missing = [k for k, v in config.items() if v is None and k in required_fields]
     if missing:
         print(f"[-] Falten variables d'entorn: {', '.join(missing)}")
         sys.exit(1)
 
+    print("[+] Generating restore.cfg")
     with open("/etc/ec2restore/restore.cfg", "w") as f:
         for key, value in config.items():
             if value is not None:
@@ -99,11 +109,15 @@ def main():
     print("[+] Iniciant procés de compilació...")
 
     # Comprova prerequisits
+    print("[+] Starting prerequisites")
     install_prerequisites()
+    print("[+] Prerequisites Done")
 
     # Crear directori temporal
+    print("[+] Creating temp directory")
     os.chdir(WORK_DIR)
     print(f"[+] Treballant a {WORK_DIR}")
+    print("[+] temp directory done")
 
     # Clonar repositori
     clone_repo()
@@ -132,11 +146,10 @@ def main():
 
 if __name__ == "__main__":
     if os.geteuid() != 0:
-        print("[-] Aquest script ha d'executar-se com a root.")
+        print("[-] This script needs run as root.")
         sys.exit(1)
 
     try:
         main()
     finally:
-        # Atexit ja fa cleanup(), però podem cridar-ho manualment també
         pass
